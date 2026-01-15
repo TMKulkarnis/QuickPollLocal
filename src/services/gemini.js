@@ -15,8 +15,8 @@ export const analyzePoll = async (poll, comments) => {
         throw new Error("Gemini client not initialized.");
     }
 
-    // Use gemini-1.5-flash for faster, cheaper inference
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Reverting to gemini-pro for stability
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     let prompt = "";
 
