@@ -8,35 +8,44 @@ if (API_KEY) {
 }
 
 export const analyzePoll = async (poll, comments) => {
+    if (!API_KEY) {
+        throw new Error("API Key not found. Please checks your .env file.");
+    }
     if (!genAI) {
-        throw new Error("Gemini API Key is missing");
+        throw new Error("Gemini client not initialized.");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Use gemini-1.5-flash for faster, cheaper inference
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     let prompt = "";
 
     if (poll.type === 'question') {
+        if (!comments || comments.length === 0) {
+            return "No comments to analyze yet. Be the first to start the discussion!";
+        }
         const commentsText = comments.map(c => `- ${c.authorName}: ${c.text}`).join("\n");
         prompt = `
 Analyze this community question and its discussion.
 Question: "${poll.question}"
 Category: ${poll.category}
-Location Context: Poll is located near coordinates (if relevant to question).
 
 Comments:
 ${commentsText}
 
 Task:
-1. Summarize the consensus or top recommendations from the community.
-2. Highlight any dissenting opinions or unique tips.
-3. Keep the tone helpful, community-focused, and concise (max 3-4 sentences).
-4. Format using Markdown (bold key terms).
+1. Summarize the consensus or top recommendations.
+2. Highlight any unique tips.
+3. Keep it helpful and concise (max 3 sentences).
 `;
     } else {
         const totalVotes = poll.options.reduce((acc, curr) => acc + (curr.count || 0), 0);
         const optionsText = poll.options.map(o => `- ${o.text}: ${o.count} votes`).join("\n");
-        const commentsText = comments.slice(0, 10).map(c => `- ${c.authorName}: ${c.text}`).join("\n"); // Limit comments for context
+
+        let commentsContext = "No comments yet.";
+        if (comments && comments.length > 0) {
+            commentsContext = comments.slice(0, 10).map(c => `- ${c.authorName}: ${c.text}`).join("\n");
+        }
 
         prompt = `
 Analyze this community poll results.
@@ -46,13 +55,13 @@ Total Votes: ${totalVotes}
 Results:
 ${optionsText}
 
-Discussion Context (sample comments):
-${commentsText}
+Discussion Context:
+${commentsContext}
 
 Task:
-1. Summarize the winning option and the margin.
-2. Explain WHY users might be preferring this (infer from context/comments).
-3. Keep it short and insightful (max 3 sentences).
+1. Summarize the winning option.
+2. Explain potential reasons based on the context (or common sense if no comments).
+3. Keep it short (max 2 sentences).
 `;
     }
 
@@ -62,6 +71,6 @@ Task:
         return response.text();
     } catch (error) {
         console.error("Gemini Analysis Error:", error);
-        throw new Error("Failed to analyze poll. AI is overloaded or unavailable.");
+        throw new Error(`AI Analysis failed: ${error.message}`);
     }
 };

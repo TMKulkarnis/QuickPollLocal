@@ -4,16 +4,44 @@ import { usePolls } from '../context/PollContext';
 import { getUserLocation } from '../services/location';
 import { useNavigate } from 'react-router-dom';
 
+import { Loader2 } from 'lucide-react';
+
 export const MapView = () => {
     const { polls } = usePolls();
     const navigate = useNavigate();
-    const [location, setLocation] = useState({ lat: 37.7749, lng: -122.4194 });
+    const [location, setLocation] = useState(null); // Start null to indicate loading
+    const [loadingLocation, setLoadingLocation] = useState(true);
 
     useEffect(() => {
+        let mounted = true;
         getUserLocation()
-            .then(pos => setLocation(pos))
-            .catch(err => console.log("Using default location", err));
+            .then(pos => {
+                if (mounted) {
+                    setLocation(pos);
+                    setLoadingLocation(false);
+                }
+            })
+            .catch(err => {
+                console.log("Using default location", err);
+                if (mounted) {
+                    setLocation({ lat: 37.7749, lng: -122.4194 }); // Default fallback
+                    setLoadingLocation(false);
+                }
+            });
+
+        return () => { mounted = false; };
     }, []);
+
+    if (loadingLocation) {
+        return (
+            <div className="h-[calc(100vh-4rem)] w-full flex items-center justify-center rounded-2xl border border-border/50 glass-card">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <p>Locating you...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-[calc(100vh-4rem)] w-full rounded-2xl overflow-hidden shadow-2xl border border-border/50 relative">
@@ -21,7 +49,7 @@ export const MapView = () => {
                 initialViewState={{
                     longitude: location.lng,
                     latitude: location.lat,
-                    zoom: 13
+                    zoom: 14 // Slightly closer zoom
                 }}
                 mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
                 theme="dark"
