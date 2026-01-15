@@ -3,33 +3,33 @@ import { Map, MapMarker, MarkerContent } from '../components/ui/map';
 import { usePolls } from '../context/PollContext';
 import { getUserLocation } from '../services/location';
 import { useNavigate } from 'react-router-dom';
-
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, MapPin } from 'lucide-react';
 
 export const MapView = () => {
     const { polls } = usePolls();
     const navigate = useNavigate();
-    const [location, setLocation] = useState(null); // Start null to indicate loading
+    const [location, setLocation] = useState(null);
     const [loadingLocation, setLoadingLocation] = useState(true);
+    const [locationError, setLocationError] = useState(null);
 
-    useEffect(() => {
-        let mounted = true;
+    const fetchLocation = () => {
+        setLoadingLocation(true);
+        setLocationError(null);
         getUserLocation()
             .then(pos => {
-                if (mounted) {
-                    setLocation(pos);
-                    setLoadingLocation(false);
-                }
+                setLocation(pos);
+                setLoadingLocation(false);
             })
             .catch(err => {
-                console.log("Using default location", err);
-                if (mounted) {
-                    setLocation({ lat: 37.7749, lng: -122.4194 }); // Default fallback
-                    setLoadingLocation(false);
-                }
+                console.error("Location error", err);
+                setLocationError("Location access denied or unavailable.");
+                setLocation({ lat: 37.7749, lng: -122.4194 }); // Fallback to SF so map still renders behind popup
+                setLoadingLocation(false);
             });
+    };
 
-        return () => { mounted = false; };
+    useEffect(() => {
+        fetchLocation();
     }, []);
 
     if (loadingLocation) {
@@ -43,13 +43,45 @@ export const MapView = () => {
         );
     }
 
+    if (locationError) {
+        return (
+            <div className="h-[calc(100vh-4rem)] w-full flex items-center justify-center rounded-2xl border border-border/50 glass-card">
+                <div className="flex flex-col items-center gap-4 text-center p-6 bg-background/50 backdrop-blur-sm rounded-xl border border-red-500/20 shadow-xl max-w-sm">
+                    <div className="bg-red-500/10 p-3 rounded-full text-red-500">
+                        <AlertCircle className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold">Location Required</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            We couldn't find you. Please enable location permissions in your browser to see local polls.
+                        </p>
+                    </div>
+                    <div className="flex gap-3 w-full">
+                        <button
+                            onClick={fetchLocation}
+                            className="flex-1 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                        >
+                            Retry
+                        </button>
+                        <button
+                            onClick={() => setLocationError(null)}
+                            className="flex-1 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors"
+                        >
+                            View Global
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="h-[calc(100vh-4rem)] w-full rounded-2xl overflow-hidden shadow-2xl border border-border/50 relative">
             <Map
                 initialViewState={{
                     longitude: location.lng,
                     latitude: location.lat,
-                    zoom: 14 // Slightly closer zoom
+                    zoom: 14
                 }}
                 mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
                 theme="dark"
