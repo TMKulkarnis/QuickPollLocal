@@ -2,22 +2,51 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 
 
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, runTransaction } from 'firebase/firestore';
+import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
 const PollContext = createContext();
 
 export const PollProvider = ({ children }) => {
     const [polls, setPolls] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [userProfile, setUserProfile] = useState({
-        name: "Guest User",
-        email: "guest@quickpoll.local",
-        avatar: ""
-    });
+    const [user, setUser] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            setAuthLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const login = async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Login failed:", error);
+            throw error;
+        }
+    };
+
+    const logout = () => {
+        return signOut(auth);
+    };
 
     // Real-time listener for polls
+    // Real-time listener for polls
     useEffect(() => {
+        // If not logged in, we might not have permission to read (depending on rules), 
+        // or we just want to clear data. Since we enforce login, we can wait for user.
+        if (!user) {
+            setPolls([]);
+            return;
+        }
+
+        setLoading(true);
         const q = query(collection(db, "polls"), orderBy("created_at", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const pollsData = snapshot.docs.map(doc => ({
@@ -32,20 +61,17 @@ export const PollProvider = ({ children }) => {
         });
 
         return () => unsubscribe();
-    }, []);
-
-    const updateProfile = (updates) => {
-        setUserProfile(prev => ({ ...prev, ...updates }));
-    };
+    }, [user]);
 
     const addPoll = async (pollData) => {
         try {
             await addDoc(collection(db, "polls"), {
                 ...pollData,
                 votes: 0,
-                created_at: Date.now(), // or serverTimestamp()
-                author: userProfile.name,
-                isMine: true // In a real app, check auth API UID
+                created_at: Date.now(),
+                authorId: user ? user.uid : 'guest',
+                authorName: user ? user.displayName : 'Guest',
+                authorPhoto: user ? user.photoURL : null,
             });
         } catch (e) {
             console.error("Error adding poll: ", e);
@@ -90,7 +116,7 @@ export const PollProvider = ({ children }) => {
     };
 
     return (
-        <PollContext.Provider value={{ polls, loading, addPoll, deletePoll, voteOption, userProfile, updateProfile }}>
+        <PollContext.Provider value={{ polls, loading: loading || authLoading, addPoll, deletePoll, voteOption, user, login, logout }}>
             {children}
         </PollContext.Provider>
     );

@@ -14,8 +14,8 @@ export const PollCard = ({ poll, onClick, distance, onDelete }) => {
                     <h3 className="font-semibold text-lg text-foreground pr-8">
                         {poll.question}
                     </h3>
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap">
-                        {poll.category}
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap ${poll.type === 'question' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' : 'bg-primary/10 text-primary'}`}>
+                        {poll.category || (poll.type === 'question' ? 'Question' : 'Poll')}
                     </span>
                 </div>
 
@@ -28,9 +28,11 @@ export const PollCard = ({ poll, onClick, distance, onDelete }) => {
                         <Clock size={14} />
                         2h ago
                     </span>
-                    <span className="font-medium text-foreground/80">
-                        {poll.votes} votes
-                    </span>
+                    {poll.type !== 'question' && (
+                        <span className="font-medium text-foreground/80">
+                            {poll.votes} votes
+                        </span>
+                    )}
                 </div>
 
                 {onDelete && (

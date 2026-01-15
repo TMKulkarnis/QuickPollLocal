@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 export const MyPolls = () => {
-    const { polls, deletePoll } = usePolls(); // Destructure deletePoll
+    const { polls, deletePoll, user } = usePolls(); // Destructure deletePoll and user
     const navigate = useNavigate();
 
-    // Filter for polls created by the user (simulated)
-    const myPolls = polls.filter(p => p.isMine);
+    // Filter for polls created by the user
+    const myPolls = polls.filter(p => user && p.authorId === user.uid);
 
     return (
         <div className="flex flex-col h-full gap-8">

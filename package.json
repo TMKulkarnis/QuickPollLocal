@@ -33,6 +33,7 @@
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "firebase-tools": "^15.3.0",
     "glob": "^13.0.0",
     "globals": "^16.5.0",
     "is-extglob": "^2.1.1",

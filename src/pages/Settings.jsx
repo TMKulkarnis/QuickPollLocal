@@ -6,9 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Bell, User, Shield, Moon } from 'lucide-react';
 
 export const Settings = () => {
-    const { userProfile, updateProfile } = usePolls(); // We use the same hook
-    const [name, setName] = React.useState(userProfile.name);
-    const [email, setEmail] = React.useState(userProfile.email);
+    const { user } = usePolls();
+    const [name, setName] = React.useState(user?.displayName || "Guest");
+    const [email, setEmail] = React.useState(user?.email || "guest@example.com");
+
+    React.useEffect(() => {
+        if (user) {
+            setName(user.displayName);
+            setEmail(user.email);
+        }
+    }, [user]);
 
     // Notification State
     const [notifications, setNotifications] = React.useState({
@@ -39,8 +46,7 @@ export const Settings = () => {
     }, [theme]);
 
     const handleSave = () => {
-        updateProfile({ name, email });
-        // Optional: Show toast or feedback
+        // updateProfile({ name, email }); // Profile update not yet implemented
     };
 
     return (
@@ -75,7 +81,7 @@ export const Settings = () => {
                                 placeholder="Enter your email"
                             />
                         </div>
-                        <Button onClick={handleSave}>Save Changes</Button>
+                        <Button disabled title="Managed by Google Account">Save Changes (Managed by Google)</Button>
                     </CardContent>
                 </Card>
 

@@ -12,6 +12,7 @@ export const CreatePoll = () => {
     const [question, setQuestion] = useState('');
     const [options, setOptions] = useState(['', '']);
     const [category, setCategory] = useState('');
+    const [postType, setPostType] = useState('poll'); // 'poll' or 'question'
     const [locationName, setLocationName] = useState('San Francisco, CA');
     const [coords, setCoords] = useState({ lat: 37.7749, lng: -122.4194 });
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -61,7 +62,8 @@ export const CreatePoll = () => {
         addPoll({
             question,
             category: category || "General",
-            options: options.map((opt, i) => ({ id: `opt-${i}`, text: opt, count: 0 })),
+            type: postType,
+            options: postType === 'poll' ? options.map((opt, i) => ({ id: `opt-${i}`, text: opt, count: 0 })) : [],
             location: {
                 lat: parseFloat(coords.lat),
                 lng: parseFloat(coords.lng),
@@ -103,8 +105,26 @@ export const CreatePoll = () => {
                 {/* Main Form */}
                 <Card className="lg:col-span-2 glass-card shadow-xl border-none">
                     <CardContent className="p-8 space-y-8">
+                        {/* Post Type Toggle */}
+                        <div className="flex p-1 bg-secondary/50 rounded-lg w-full md:w-fit">
+                            <button
+                                onClick={() => setPostType('poll')}
+                                className={`flex-1 md:flex-none px-6 py-2 rounded-md text-sm font-medium transition-all ${postType === 'poll' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Poll
+                            </button>
+                            <button
+                                onClick={() => setPostType('question')}
+                                className={`flex-1 md:flex-none px-6 py-2 rounded-md text-sm font-medium transition-all ${postType === 'question' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Question
+                            </button>
+                        </div>
+
                         <div className="space-y-3">
-                            <label className="text-sm font-semibold tracking-wide text-foreground/80 uppercase">Question</label>
+                            <label className="text-sm font-semibold tracking-wide text-foreground/80 uppercase">
+                                {postType === 'poll' ? 'Question' : 'What would you like to ask?'}
+                            </label>
                             <Input
                                 value={question}
                                 onChange={(e) => setQuestion(e.target.value)}
@@ -193,36 +213,38 @@ export const CreatePoll = () => {
                             </p>
                         </div>
 
-                        <div className="space-y-4">
-                            <label className="text-sm font-semibold tracking-wide text-foreground/80 uppercase">Options</label>
-                            <div className="space-y-3">
-                                {options.map((opt, idx) => (
-                                    <div key={idx} className="flex gap-2 items-center group">
-                                        <div className="h-8 w-8 flex items-center justify-center rounded-full bg-secondary text-muted-foreground text-xs font-bold">
-                                            {String.fromCharCode(65 + idx)}
+                        {postType === 'poll' && (
+                            <div className="space-y-4">
+                                <label className="text-sm font-semibold tracking-wide text-foreground/80 uppercase">Options</label>
+                                <div className="space-y-3">
+                                    {options.map((opt, idx) => (
+                                        <div key={idx} className="flex gap-2 items-center group">
+                                            <div className="h-8 w-8 flex items-center justify-center rounded-full bg-secondary text-muted-foreground text-xs font-bold">
+                                                {String.fromCharCode(65 + idx)}
+                                            </div>
+                                            <Input
+                                                value={opt}
+                                                onChange={(e) => handleOptionChange(idx, e.target.value)}
+                                                placeholder={`Option ${idx + 1}`}
+                                                className="bg-secondary/50 dark:bg-secondary/20 border-transparent focus:bg-background transition-all"
+                                            />
+                                            {options.length > 2 && (
+                                                <Button variant="ghost" size="icon" onClick={() => removeOption(idx)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <X className="w-4 h-4 text-muted-foreground" />
+                                                </Button>
+                                            )}
                                         </div>
-                                        <Input
-                                            value={opt}
-                                            onChange={(e) => handleOptionChange(idx, e.target.value)}
-                                            placeholder={`Option ${idx + 1}`}
-                                            className="bg-secondary/50 dark:bg-secondary/20 border-transparent focus:bg-background transition-all"
-                                        />
-                                        {options.length > 2 && (
-                                            <Button variant="ghost" size="icon" onClick={() => removeOption(idx)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <X className="w-4 h-4 text-muted-foreground" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
+                                <Button onClick={addOption} variant="outline" className="w-full border-dashed border-2 hover:border-primary hover:text-primary transition-colors">
+                                    <Plus className="w-4 h-4 mr-2" /> Add Option
+                                </Button>
                             </div>
-                            <Button onClick={addOption} variant="outline" className="w-full border-dashed border-2 hover:border-primary hover:text-primary transition-colors">
-                                <Plus className="w-4 h-4 mr-2" /> Add Option
-                            </Button>
-                        </div>
+                        )}
 
                         <div className="pt-6 border-t border-border/50">
                             <Button onClick={handleSubmit} className="w-full h-12 text-lg shadow-lg hover:shadow-xl bg-gradient-to-r from-primary to-purple-600 border-0">
-                                Launch Poll
+                                {postType === 'poll' ? 'Launch Poll' : 'Ask Question'}
                             </Button>
                         </div>
                     </CardContent>

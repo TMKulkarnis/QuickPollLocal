@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /polls/{pollId} {
+      // Allow any authenticated user to read polls
+      allow read: if request.auth != null;
+      
+      // Allow any authenticated user to create polls
+      allow create: if request.auth != null;
+      
+      // Allow any authenticated user to update polls (needed for voting)
+      // Ideally we would restrict this to only options/votes fields for non-authors
+      allow update: if request.auth != null;
+      
+      // Only allow the author to delete the poll
+      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+      
+      match /comments/{commentId} {
+        // Allow any authenticated user to read/write comments
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}
